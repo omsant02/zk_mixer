@@ -1,0 +1,22 @@
+# Noir build artifacts
+target/
+
+# Prover and verifier keys
+*.pk
+*.vk
+vk_hash
+
+# Proofs
+*.proof
+
+# Witness files
+Prover.toml
+Verifier.toml
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

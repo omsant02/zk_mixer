@@ -6,9 +6,12 @@ import {Poseidon2, Field} from "@poseidon/src/Poseidon2.sol";
 
 contract IncrementalMerkleTree {
     uint32 public immutable i_depth;
-    bytes32 public s_root;
     uint32 public s_nextLeafIndex;
     mapping (uint32 => bytes32) public s_cashedSubtrees;
+    mapping (uint32 => bytes32) public s_roots;
+
+    uint32 public constant ROOT_HISTORY_SIZE = 30;
+    uint32 public s_currentRootIndex;
 
     Poseidon2 public immutable i_hasher;
 
@@ -28,7 +31,7 @@ contract IncrementalMerkleTree {
         i_depth = _depth;
         i_hasher = _hasher;
 
-        s_root = zeros(_depth);
+        s_roots[0] = zeros(_depth);
     }
 
      function zeros(uint256 i) public pure returns (bytes32) {
@@ -89,8 +92,30 @@ contract IncrementalMerkleTree {
             currentHash = Field.toBytes32(i_hasher.hash_2(Field.toField(left), Field.toField(right)));
             currentIndex /= 2;
         }
-       s_root = currentHash;
+       uint32 newRootIndex = (s_currentRootIndex + 1) % ROOT_HISTORY_SIZE;
+       s_currentRootIndex = newRootIndex;
+       s_roots[newRootIndex] = currentHash;
        s_nextLeafIndex += 1;
        return _nextLeafIndex;
+    }
+
+    function isKnownRoot(bytes32 _root) public view returns (bool) {
+        if (_root == bytes32(0)) {
+            return false;
+        }
+
+        uint32 _currentRootIndex = s_currentRootIndex;
+        uint32 i = _currentRootIndex;
+
+        do {
+            if(s_roots[i] == _root) {
+                return true;
+            }
+            if (i ==0) {
+                i = ROOT_HISTORY_SIZE;
+            }
+            i--;
+        }while(i != _currentRootIndex);
+        return false;
     }
 }
